@@ -28,10 +28,19 @@ def main(is_semi_supervised, trial_num):
     # *** START CODE HERE ***
     # (1) Initialize mu and sigma by splitting the m data points uniformly at random
     # into K groups, then calculating the sample mean and covariance for each group
+    m, n = x.shape
+    split = np.array_split(np.random.permutation(m), K)
+    mu = np.zeros((K, n))
+    sigma = np.zeros((K, n, n))
+    for k in range(len(split)):
+        mu[k] = np.mean(x[split[k]])
+        sigma[k] = np.cov(x[split[k]].T)
     # (2) Initialize phi to place equal probability on each Gaussian
     # phi should be a numpy array of shape (K,)
+    phi = np.ones(K) / K
     # (3) Initialize the w values to place equal probability on each Gaussian
     # w should be a numpy array of shape (m, K)
+    w = np.ones((m, K)) / K
     # *** END CODE HERE ***
 
     if is_semi_supervised:
@@ -73,17 +82,31 @@ def run_em(x, w, phi, mu, sigma):
     # See below for explanation of the convergence criterion
     it = 0
     ll = prev_ll = None
+    m, _ = x.shape
     while it < max_iter and (prev_ll is None or np.abs(ll - prev_ll) >= eps):
-        pass  # Just a placeholder for the starter code
+        it += 1
         # *** START CODE HERE
         # (1) E-step: Update your estimates in w
+        for k in range(K):
+            w[:, k] = np.exp(-np.sum((x - mu[k]) @ np.linalg.inv(sigma[k]) * (x - mu[k]), axis=1) / 2) / np.sqrt(np.linalg.det(sigma[k])) * phi[k]
+        w = w / np.sum(w, axis=1)[:, None]
         # (2) M-step: Update the model parameters phi, mu, and sigma
+        phi = np.mean(w, axis=0)
+        for k in range(K):
+            mu[k] = x.T @ w[:, k] / np.sum(w[:, k])
+            sigma[k] = ((x - mu[k]) * w[:, k][:, None]).T @ (x - mu[k]) / np.sum(w[:, k])
         # (3) Compute the log-likelihood of the data to check for convergence.
         # By log-likelihood, we mean `ll = sum_x[log(sum_z[p(x|z) * p(z)])]`.
+        prev_ll = ll
+        p_x_given_z = np.zeros((m, K))
+        for k in range(K):
+            p_x_given_z[:, k] = np.exp(-np.sum((x - mu[k]) @ np.linalg.inv(sigma[k]) * (x - mu[k]), axis=1) / 2) / np.sqrt(np.linalg.det(sigma[k])) * phi[k]
+        ll = np.sum(np.log(p_x_given_z * phi))
         # We define convergence by the first iteration where abs(ll - prev_ll) < eps.
         # Hint: For debugging, recall part (a). We showed that ll should be monotonically increasing.
         # *** END CODE HERE ***
 
+    print("Unsupervised converged in", it, "iterations!")
     return w
 
 
@@ -111,20 +134,40 @@ def run_semi_supervised_em(x, x_tilde, z, w, phi, mu, sigma):
     eps = 1e-3   # Convergence threshold
     max_iter = 1000
 
+    z_ = z.reshape(-1)
+
     # Stop when the absolute change in log-likelihood is < eps
     # See below for explanation of the convergence criterion
     it = 0
     ll = prev_ll = None
+    m, _ = x.shape
+    m_tilde, _ = x_tilde.shape
     while it < max_iter and (prev_ll is None or np.abs(ll - prev_ll) >= eps):
-        pass  # Just a placeholder for the starter code
+        it += 1
         # *** START CODE HERE ***
         # (1) E-step: Update your estimates in w
+        for k in range(K):
+            w[:, k] = np.exp(-np.sum((x - mu[k]) @ np.linalg.inv(sigma[k]) * (x - mu[k]), axis=1) / 2) / np.sqrt(np.linalg.det(sigma[k])) * phi[k]
+        w = w / np.sum(w, axis=1)[:, None]
         # (2) M-step: Update the model parameters phi, mu, and sigma
+        _, counts = np.unique(z, return_counts=True)
+        phi = (np.sum(w, axis=0) + alpha * counts) / (m + alpha * m_tilde)
+        for k in range(K):
+            mu[k] = (x.T @ w[:, k] + alpha * np.sum(x_tilde[z_ == k, :], axis=0)) / (np.sum(w[:, k]) + alpha * counts[k])
+            sigma[k] = (((x - mu[k]) * w[:, k][:, None]).T @ (x - mu[k]) + alpha * (x_tilde[z_ == k, :] - mu[k]).T @ (x_tilde[z_ == k] - mu[k])) / (np.sum(w[:, k]) + alpha * counts[k])
         # (3) Compute the log-likelihood of the data to check for convergence.
         # Hint: Make sure to include alpha in your calculation of ll.
+        prev_ll = ll
+        p_x_given_z = np.zeros((m, K))
+        for k in range(K):
+            p_x_given_z[:, k] = np.exp(-np.sum((x - mu[k]) @ np.linalg.inv(sigma[k]) * (x - mu[k]), axis=1) / 2) / np.sqrt(np.linalg.det(sigma[k])) * phi[k]
+        ll = np.sum(np.log(p_x_given_z * phi))
+        for k in range(K):
+            ll += alpha * np.sum(np.exp(-np.sum((x_tilde[z_ == k, :] - mu[k]) @ np.linalg.inv(sigma[k]) * (x_tilde[z_ == k, :] - mu[k]), axis=1) / 2)) / np.sqrt(np.linalg.det(sigma[k])) * phi[k]
         # Hint: For debugging, recall part (a). We showed that ll should be monotonically increasing.
         # *** END CODE HERE ***
 
+    print("Semi-supervised converged in", it, "iterations!")
     return w
 
 
@@ -197,5 +240,5 @@ if __name__ == '__main__':
         # Once you've implemented the semi-supervised version,
         # uncomment the following line.
         # You do not need to add any other lines in this code block.
-        # main(with_supervision=True, trial_num=t)
+        main(is_semi_supervised=True, trial_num=t)
         # *** END CODE HERE ***
