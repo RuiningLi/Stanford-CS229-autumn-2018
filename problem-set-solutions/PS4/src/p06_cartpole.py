@@ -208,7 +208,6 @@ def update_mdp_value(mdp_data, tolerance, gamma):
         True if the value iteration converged in one iteration
 
     """
-    # *** START CODE HERE ***
     iter = 0
     reward = mdp_data["reward"]
     transition_probs = mdp_data["transition_probs"]
@@ -226,11 +225,10 @@ def update_mdp_value(mdp_data, tolerance, gamma):
             break
 
     return iter == 1
-    # *** END CODE HERE ***
 
 def main(plot=True):
     # Seed the randomness of the simulation so this outputs the same thing each time
-    seed = 3
+    seed = 0
     np.random.seed(seed)
 
     # Simulation parameters
