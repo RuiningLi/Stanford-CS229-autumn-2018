@@ -10,4 +10,4 @@ The videos of all lectures are available on [YouTube](https://youtube.com/playli
 
 ### Motivation
 
-In order to limit access to the assignments to only enrolled students, Stanford didn't post the assignments publicly. However, (I found) the assignments are really helpful in gaining a deeper understanding of the topics covered in the class and an opportunity to implement various learning algorithms from scratch. Therefore, I decided to publish the assignments, as well as my solutions to them, here!
+My motivation is to provide people who are self-studying this course a sample solution to the problem sets, so that when they get stuck they know where to look for hints.
