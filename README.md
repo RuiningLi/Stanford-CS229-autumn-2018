@@ -10,4 +10,4 @@ The videos of all lectures are available on [YouTube](https://youtube.com/playli
 
 ### Motivation
 
-My motivation is to provide people who are self-studying this course a sample solution to the problem sets, so that when they get stuck they know where to look for hints.
+My motivation is to provide people who are self-studying this course sample solutions (not guaranteed to be free of errors) to the problem sets, so that when they get stuck they know where to look for hints.
